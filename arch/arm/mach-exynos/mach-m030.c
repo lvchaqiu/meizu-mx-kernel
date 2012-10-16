@@ -163,9 +163,18 @@ static struct s3c2410_uartcfg __initdata m030_uartcfgs[] = {
 };
 
 #if defined(CONFIG_BT)
+static struct mx_rfkill_pd __initdata m030_rfkill_pd = {
+	.name           = "bcm4329_bt",
+	.bt_power     = EXYNOS4_GPF2(3),
+	.bt_reset     = EXYNOS4_GPF2(1),
+	.bt_wake      = EXYNOS4_GPF3(1),
+	.bt_host_wake = EXYNOS4_GPX1(1),
+	.wifi_power   = EXYNOS4_GPF1(5),
+	.wifi_reset   = EXYNOS4_GPF1(0),
+};
 static struct platform_device m030_bt_ctr = {
-	.name = "bt_ctr",
-	.id = -1,
+	.name          = "bt_ctr",
+	.id            = -1,
 };
 #endif
 
@@ -330,8 +339,13 @@ struct max17042_reg_data max17042_init_data[] = {
 };
 
 struct max17042_reg_data max17042_alert_init_data[] = {
+#ifdef CONFIG_MX_RECOVERY_KERNEL
+	/* SALRT Threshold setting (disable) */
+	{ MAX17042_REG_SALRT_TH,	0x00,	0xFF },
+#else
 	/* SALRT Threshold setting to 6% => 5% wake lock */
 	{ MAX17042_REG_SALRT_TH,	0x06,	0xFF },
+#endif
 	/* VALRT Threshold setting (disable) */
 	{ MAX17042_REG_VALRT_TH,	0x00,	0xFF },
 	/* TALRT Threshold setting (disable) */
@@ -1158,6 +1172,11 @@ static void __init m030_machine_init(void)
 
 #ifdef CONFIG_SENSORS_EXYNOS4_TMU
 	exynos4_tmu_set_platdata();
+#endif
+
+#ifdef CONFIG_BT
+	s3c_set_platdata(&m030_rfkill_pd, sizeof(struct mx_rfkill_pd),
+			&m030_bt_ctr);
 #endif
 
 	platform_add_devices(m030_devices, ARRAY_SIZE(m030_devices));

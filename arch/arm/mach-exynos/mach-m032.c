@@ -143,9 +143,18 @@ static struct s3c2410_uartcfg __initdata m032_uartcfgs[] = {
 };
 
 #ifdef CONFIG_BT
+static struct mx_rfkill_pd __initdata m032_rfkill_pd = {
+	.name           = "bcm4329_bt",
+	.bt_power       = EXYNOS4_GPY6(7),
+	.bt_reset       = EXYNOS4_GPY5(5),
+	.bt_wake        = EXYNOS4_GPY6(6),
+	.bt_host_wake   = EXYNOS4_GPX2(4),
+	.wifi_power     = EXYNOS4_GPY6(3),
+	.wifi_reset     = EXYNOS4_GPY5(1),
+};
 static struct platform_device m032_bt_ctr = {
-	.name = "bt_ctr",
-	.id = -1,
+	.name	= "bt_ctr",
+	.id     = -1,
 };
 #endif
 
@@ -1111,6 +1120,11 @@ static void __init m032_machine_init(void)
 
 #ifdef CONFIG_SENSORS_EXYNOS4_TMU
 	exynos4_tmu_set_platdata();
+#endif
+
+#ifdef CONFIG_BT
+	s3c_set_platdata(&m032_rfkill_pd, sizeof(struct mx_rfkill_pd),
+			&m032_bt_ctr);
 #endif
 
 	platform_add_devices(m032_devices, ARRAY_SIZE(m032_devices));
