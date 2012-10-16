@@ -12,6 +12,7 @@
 #include <linux/platform_device.h>
 #include <linux/io.h>
 #include <mach/regs-pmu.h>
+
 #include <mach/mx_debug.h>
 
 #define DEV_NAME "wakeup_assist"
@@ -71,10 +72,9 @@ static int __devexit wakeup_assist_remove(struct platform_device *pdev)
 #ifdef CONFIG_MX_SERIAL_TYPE
 static inline int wakeup_assist_done(struct input_dev *input_dev)
 {
-	unsigned long mx_wake_typed = mx_get_wakeup_type();
+	unsigned long mx_wake_typed = readl(S5P_INFORM3);
 	unsigned long allow_wake_type = MX_USB_WAKE |
 								   MX_LOWBAT_WAKE |
-								   MX_IR_WAKE |
 								   MX_KEY_HOME_WAKE |
 								   MX_KEY_POWER_WAKE ;
 
@@ -94,6 +94,10 @@ static inline int wakeup_assist_done(struct input_dev *input_dev)
 		input_report_key(input_dev, wakeup_assist_keycode[3], 0);
 		input_sync(input_dev);
 	}
+
+	/* To clean inform3 at here*/
+	writel(0, S5P_INFORM3);
+
 	return 0;
 }
 #else

@@ -14,14 +14,20 @@
  * GNU General Public License for more details.
  */
  
-static unsigned long mx_wakeup_type;
+static unsigned long mx_get_wakeup_type(void) {
+	return readl(S5P_INFORM3);
+}
 
-unsigned long mx_get_wakeup_type(void) {return mx_wakeup_type;}
-
-static unsigned long mx_set_wakeup_type(unsigned long mask)
+static void mx_set_wakeup_type(unsigned long mask)
 {
-	return mask ? (mx_wakeup_type |= mask) :
-				  (mx_wakeup_type = mask);
+	static unsigned long tmp = 0;
+	
+	if (mask)
+		tmp |= mask;
+	else
+		tmp = 0;
+
+	writel(tmp, S5P_INFORM3);
 }
 
 static inline void m030_set_wakeup_type(mx_int_type group, int pending)
@@ -150,41 +156,41 @@ static void mx_show_wakeup_name(void)
 
 	len = sprintf(wakeup_str, "%s", "MX Wakeup By:");
 
-	if(mx_wakeup_type & MX_USB_WAKE)
+	if(mx_get_wakeup_type() & MX_USB_WAKE)
 		len +=  sprintf(wakeup_str+len, " USB_WAKE");
-	if(mx_wakeup_type & MX_LOWBAT_WAKE)
+	if(mx_get_wakeup_type() & MX_LOWBAT_WAKE)
 		len +=  sprintf(wakeup_str+len, " LOWBAT_WAKE");
-	if(mx_wakeup_type & MX_CHARG_WAKE)
+	if(mx_get_wakeup_type() & MX_CHARG_WAKE)
 		len +=  sprintf(wakeup_str+len, " CHARG_WAKE");
-	if(mx_wakeup_type & MX_WIFI_WAKE)
+	if(mx_get_wakeup_type() & MX_WIFI_WAKE)
 		len +=  sprintf(wakeup_str+len, " WIFI_WAKE");
-	if(mx_wakeup_type & MX_BLUETOOTH_WAKE)
+	if(mx_get_wakeup_type() & MX_BLUETOOTH_WAKE)
 		len +=  sprintf(wakeup_str+len, " BLUETOOTH_WAKE");
-	if(mx_wakeup_type & MX_MODEM_RST_WAKE)
+	if(mx_get_wakeup_type() & MX_MODEM_RST_WAKE)
 		len +=  sprintf(wakeup_str+len, " MODEM_RST_WAKE");
-	if(mx_wakeup_type & MX_MODEM_WAKE)
+	if(mx_get_wakeup_type() & MX_MODEM_WAKE)
 		len +=  sprintf(wakeup_str+len, " MODEM_WAKE");
-	if(mx_wakeup_type & MX_KEY_POWER_WAKE)
+	if(mx_get_wakeup_type() & MX_KEY_POWER_WAKE)
 		len +=  sprintf(wakeup_str+len, " KEY_POWER_WAKE");
-	if(mx_wakeup_type & MX_KEY_HOME_WAKE)
+	if(mx_get_wakeup_type() & MX_KEY_HOME_WAKE)
 		len +=  sprintf(wakeup_str+len, " KEY_HOME_WAKE");
-	if(mx_wakeup_type & MX_USB_HOST_WAKE)
+	if(mx_get_wakeup_type() & MX_USB_HOST_WAKE)
 		len +=  sprintf(wakeup_str+len, " MX_USB_HOST_WAKE");
-	if(mx_wakeup_type & MX_ALARM_WAKE)
+	if(mx_get_wakeup_type() & MX_ALARM_WAKE)
 		len +=  sprintf(wakeup_str+len, " ALARM_WAKE");
-	if(mx_wakeup_type & MX_TICK_WAKE)
+	if(mx_get_wakeup_type() & MX_TICK_WAKE)
 		len +=  sprintf(wakeup_str+len, " TICK_WAKE");
-	if(mx_wakeup_type & MX_I2S_WAKE)
+	if(mx_get_wakeup_type() & MX_I2S_WAKE)
 		len +=  sprintf(wakeup_str+len, " I2S_WAKE");
-	if(mx_wakeup_type & MX_SYSTIMER_WAKE)
+	if(mx_get_wakeup_type() & MX_SYSTIMER_WAKE)
 		len +=  sprintf(wakeup_str+len, " SYSTIMER_WAKE");
-	if(mx_wakeup_type & MX_MINUS_KEY_WAKE)
+	if(mx_get_wakeup_type() & MX_MINUS_KEY_WAKE)
 		len +=  sprintf(wakeup_str+len, " VOLUMEDOWN_KEY_WAKE");
-	if(mx_wakeup_type & MX_PLUS_KEY_WAKE)
+	if(mx_get_wakeup_type() & MX_PLUS_KEY_WAKE)
 		len +=  sprintf(wakeup_str+len, " VOLUMEUP_KEY_WAKE");
-	if(mx_wakeup_type & MX_JACK_WAKE)
+	if(mx_get_wakeup_type() & MX_JACK_WAKE)
 		len +=  sprintf(wakeup_str+len, " JACK_WAKE");
-	if(!mx_wakeup_type)
+	if(!mx_get_wakeup_type())
 		len +=  sprintf(wakeup_str+len, " UNKNOW_WAKE");
 
 	pr_info("%s\n", wakeup_str);

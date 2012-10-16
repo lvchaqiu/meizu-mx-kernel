@@ -12,7 +12,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
- 
+
+#ifndef _MX_DEBU_H_
+#define _MX_DEBU_H_
+
 typedef enum {
 	MX_USB_WAKE		= 1<<0,
 	MX_LOWBAT_WAKE 	= 1<<1,
@@ -43,4 +46,4 @@ typedef enum {
 	OTHER_INT,
 } mx_int_type;
 
-extern unsigned long mx_get_wakeup_type(void);
+#endif	/* _MX_DEBU_H_ */
