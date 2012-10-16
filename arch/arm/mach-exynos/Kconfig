@@ -98,7 +98,14 @@ config MX_SERIAL_TYPE
 	select EXYNOS4_DEV_PPMU
 	help
 	  Enable Meizu M030/M031/M032 Platform support
-	
+
+config MX_CPUIDLE_LEDS
+	bool
+	select LEDS_GPIO_REGISTER
+	select LEDS_TRIGGERS
+	help
+	  Enable extenal function to moniter cpu running status
+
 choice
 	prompt "EXYNOS5210 core type"
 	depends on CPU_EXYNOS5210
@@ -651,7 +658,7 @@ config MACH_M032
 	select S5P_DEV_USB_SWITCH
 	select EXYNOS4_SETUP_I2C2
 	select EXYNOS4_SETUP_I2C4
-	select LEDS_GPIO_REGISTER
+	select MX_CPUIDLE_LEDS
 	help
 	  Machine support for Meizu M032/M031 SmartPhone based on EXYNOS4x12
 	

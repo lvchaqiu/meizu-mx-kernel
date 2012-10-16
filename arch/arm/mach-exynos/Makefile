@@ -125,6 +125,7 @@ obj-$(CONFIG_MX_SERIAL_TYPE)		+= mx_fb.o mx_camera.o mx_cma.o mx_tsp.o mx_mshci.
 obj-$(CONFIG_MX_SERIAL_TYPE)		+= mx_factory.o mx_debug.o
 
 obj-$(CONFIG_LEDS_GPIO_REGISTER)	+= mx_leds.o
+obj-$(CONFIG_MX_CPUIDLE_LEDS)		+= mx_idle_leds.o
 obj-$(CONFIG_MX_DEV_JACK)		+= mx_jack.o
 obj-$(CONFIG_TOUCH_BOOSTER)		+= mx_ts_booster.o
 obj-$(CONFIG_CPUPOWER)			+= mx_cpu_power.o

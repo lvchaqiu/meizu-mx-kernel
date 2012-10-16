@@ -15,7 +15,6 @@
 #include <linux/suspend.h>
 #include <linux/platform_device.h>
 #include <linux/gpio.h>
-#include <linux/leds.h>
 
 #include <asm/proc-fns.h>
 #include <asm/tlbflush.h>
@@ -66,11 +65,6 @@ struct check_device_op {
 	struct platform_device	*pdev;
 	enum hc_type		type;
 };
-
-#ifdef CONFIG_LEDS_TRIGGERS
-DEFINE_LED_TRIGGER(didle_led_trigger);
-DEFINE_LED_TRIGGER(idle_led_trigger[4]);
-#endif
 
 #ifdef CONFIG_MX_SERIAL_TYPE
 #define CPUDILE_ENABLE_MASK (ENABLE_LPA | ENABLE_AFTR)
@@ -803,15 +797,11 @@ static int __maybe_unused exynos4_enter_lowpower(struct cpuidle_device *dev,
 		enter_mode = exynos4_check_entermode();
 		switch (enter_mode) {
 		case S5P_CHECK_DIDLE:
-			led_trigger_event(didle_led_trigger, LED_FULL);
 			idle_time = exynos4_enter_core0_aftr(dev, new_state);
-			led_trigger_event(didle_led_trigger, LED_OFF);
 			break;
 		case S5P_CHECK_LPA:
 			bt_uart_rts_ctrl(1);
-			led_trigger_event(didle_led_trigger, LED_FULL);
 			idle_time = exynos4_enter_core0_lpa(dev, new_state);
-			led_trigger_event(didle_led_trigger, LED_OFF);
 			bt_uart_rts_ctrl(0);
 			break;
 		default:
@@ -904,29 +894,6 @@ static void __init exynos4_core_down_clk(void)
 }
 #else
 #define exynos4_core_down_clk()	do { } while (0)
-#endif
-
-#ifdef CONFIG_LEDS_TRIGGERS
-static int exynos4_leds_idle_notifier(struct notifier_block *nb, unsigned long val,
-                                void *data)
-{
-	int cpuid = smp_processor_id();
-
-	switch (val) {
-	case IDLE_START:
-		led_trigger_event(idle_led_trigger[cpuid], LED_OFF);
-		break;
-	case IDLE_END:
-		led_trigger_event(idle_led_trigger[cpuid], LED_FULL);
-		break;
-	}
-
-	return 0;
-}
-
-static struct notifier_block exynos4_leds_idle_nb = {
-	.notifier_call = exynos4_leds_idle_notifier,
-};
 #endif
 
 static int __init exynos4_init_cpuidle(void)
@@ -1033,22 +1000,6 @@ static int __init exynos4_init_cpuidle(void)
 	flush_cache_all();
 	outer_clean_range(virt_to_phys(l2x0_save), ARRAY_SIZE(l2x0_save));
 	outer_clean_range(virt_to_phys(scu_save), ARRAY_SIZE(scu_save));
-
-#ifdef CONFIG_LEDS_TRIGGERS
-	do {
-		static char trig_name[4][16];
-		static char trig_didle[8];
-		int i;
-		for (i = 0; i<ARRAY_SIZE(trig_name); i++) {
-			snprintf(trig_name[i], sizeof(trig_name[i]), "cpu%d-idle", i);
-			led_trigger_register_simple(trig_name[i], &idle_led_trigger[i]);
-		}
-		idle_notifier_register(&exynos4_leds_idle_nb);
-
-		snprintf(trig_didle, sizeof(trig_didle), "didle");
-		led_trigger_register_simple(trig_didle, &didle_led_trigger);
-	} while(0);
-#endif
 
 	return 0;
 }
