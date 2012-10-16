@@ -1,0 +1,52 @@
+#
+# (C) COPYRIGHT 2010-2011 ARM Limited. All rights reserved.
+#
+# This program is free software and is provided to you under the terms of the GNU General Public License version 2
+# as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
+#
+# A copy of the licence is included with the program, and can also be obtained from Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. 
+#
+#
+
+
+Import('env')
+
+# Clone the environment so changes don't affect other build files
+env_osk = env.Clone()
+
+# Source files required for the OSK. We include a "#" in the Glob expression
+# to cause SCons to look in the directory relative that in which the SCons
+# command is executed; otherwise, it start looking for the C source files in
+# the variant directory and will fail to spot changes as the files are not
+# present there.
+osk_src = [Glob('*.c'), Glob('#osk/src/common/*.c')]
+
+env_osk.Append( CPPPATH='#osk/src/linux/include' ) 
+
+if env_osk['v'] != '1':
+	env_osk['MAKECOMSTR'] = '[MAKE] ${SOURCE.dir}'
+
+# Note: cleaning via the Linux kernel build system does not yet work
+if env_osk.GetOption('clean') :
+	makeAction=Action("cd ${SOURCE.dir} && make clean", '$MAKECOMSTR')
+else:
+	makeAction=Action("cd ${SOURCE.dir} && make MALI_DEBUG=${debug} MALI_HW_VERSION=${hwver} MALI_BASE_TRACK_MEMLEAK=${base_qa} MALI_LICENSE_IS_GPL=${mali_license_is_gpl} MALI_USE_UMP=${ump} MALI_UNIT_TEST=${unit} && cp lib.a $STATIC_LIB_PATH/libosk.a", '$MAKECOMSTR')
+
+# The target is libosk.a, built from the source in osk_src, via the action makeAction
+# libosk.a will be copied to $STATIC_LIB_PATH after being built by the standard Linux
+# kernel build system, after which it can be installed to the directory specified if
+# "libs_install" is set; this is done by LibTarget.
+cmd = env_osk.Command('$STATIC_LIB_PATH/libosk.a', osk_src, [makeAction])
+
+# Until we fathom out how the invoke the Linux build system to clean, we can use Clean
+# to remove generated files.
+
+patterns = ['*.o', '*.a', '.*.cmd', 'modules.order', '.tmp_versions', 'Module.symvers']
+
+for p in patterns:
+	Clean(cmd, Glob('#osk/src/linux/%s' % p))
+	Clean(cmd, Glob('#osk/src/common/%s' % p))
+
+env_osk.LibTarget('osk', cmd)
+

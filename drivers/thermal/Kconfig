@@ -1,0 +1,52 @@
+#
+# Generic thermal sysfs drivers configuration
+#
+
+menuconfig THERMAL
+	tristate "Generic Thermal sysfs driver"
+	help
+	  Generic Thermal Sysfs driver offers a generic mechanism for
+	  thermal management. Usually it's made up of one or more thermal
+	  zone and cooling device.
+	  Each thermal zone contains its own temperature, trip points,
+	  cooling devices.
+	  All platforms with ACPI thermal support can use this driver.
+	  If you want this support, you should say Y or M here.
+
+
+config THERMAL_HWMON
+	bool
+	depends on THERMAL
+	depends on HWMON=y || HWMON=THERMAL
+	default y
+
+config CPU_THERMAL
+	bool "Generic cpu cooling support"
+	depends on THERMAL
+	help
+	  This implements the generic cpu cooling mechanism through frequency
+	  reduction, cpu hotplug and any other ways of reducing temperature. An
+	  ACPI version of this already exists(drivers/acpi/processor_thermal.c).
+	  This will be useful for platforms using the generic thermal interface
+	  and not the ACPI interface.
+	  If you want this support, you should say Y or M here.
+
+config SAMSUNG_THERMAL_INTERFACE
+	bool "Samsung Thermal interface support"
+	depends on CPU_THERMAL
+	default y
+	help
+	  This is a samsung thermal interface which will be used as
+	  a link between sensors and cooling devices with linux thermal
+	  framework.
+
+config SENSORS_EXYNOS4_TMU
+	tristate "Temperature sensor on Samsung EXYNOS4"
+	depends on THERMAL && ARCH_EXYNOS4
+	default y
+	help
+	  If you say yes here you get support for TMU (Thermal Managment
+	  Unit) on SAMSUNG EXYNOS4 series of SoC.
+
+	  This driver can also be built as a module. If so, the module
+	  will be called exynos4-tmu.

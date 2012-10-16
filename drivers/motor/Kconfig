@@ -1,0 +1,28 @@
+#
+#
+#
+menuconfig VIBRATOR
+	tristate "Vibrator"
+	default y
+	help
+	  Say Y to enable Vibrator support.
+
+if VIBRATOR
+
+config MOTOR_DRV_MAX77665
+	tristate "Maxim MAX77665 motor"
+	default y
+	depends on MFD_MAX77665
+	help
+	  If you say yes here you will get support for the
+	  motor of Maxim MAX77665 PMIC.
+
+config MOTOR_DRV_MAX8997
+	tristate "Maxim MAX8997 motor"
+	default y
+	depends on MFD_MAX8997
+	help
+	  If you say yes here you will get support for the
+	  motor of Maxim MAX8997 PMIC.
+
+endif

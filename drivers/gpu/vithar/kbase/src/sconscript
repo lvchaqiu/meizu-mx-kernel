@@ -1,0 +1,198 @@
+#
+# (C) COPYRIGHT 2010-2011 ARM Limited. All rights reserved.
+#
+# This program is free software and is provided to you under the terms of the GNU General Public License version 2
+# as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
+#
+# A copy of the licence is included with the program, and can also be obtained from Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. 
+#
+#
+
+
+import os
+import re
+import sys
+Import('env')
+
+scheduling_policy = 'cfs'
+mock_test = 0
+
+if env['error_inject'] == '1':
+	env.Append( CPPDEFINES = {'MALI_ERROR_INJECT_ON' : 1} )
+elif env['error_inject'] == '2':
+	env.Append( CPPDEFINES = {'MALI_ERROR_INJECT_ON' : 2} )
+else:
+	env['error_inject'] = 0
+	env.Append( CPPDEFINES = {'MALI_ERROR_INJECT_ON' : 0} )
+
+if env['os'] == 'linux' or env['os'] == 'android':
+	if env['backend'] == 'kernel':
+		if env['v'] != '1':
+			env['MAKECOMSTR'] = '[MAKE] ${SOURCE.dir}'
+
+		# Fake platform is a transient solution for GPL drivers running in kernel that does not provide configuration via platform data.
+		# For such kernels fake_platform_device should be set to 1. For kernels providing platform data and for
+		# commercial driver fake_platform_device should be set to 0.
+		if int(env['mali_license_is_gpl']) == 1:
+			fake_platform_device = 1
+		else:
+			fake_platform_device = 0
+
+		# Source files required for kbase.
+		kbase_src = [Glob('#kbase/src/common/*.c'), Glob('#kbase/src/linux/*.c'), Glob('#kbase/src/common/*.h'), Glob('#kbase/src/linux/*.h')]
+
+		if Glob('#kbase/tests/internal/src/mock') and env['unit'] == '1':
+			kbase_src += [Glob('#kbase/tests/internal/src/mock/*.c')]
+			mock_test = 1
+
+		# we need platform config for commercial version of the driver and for GPL version using fake platform
+		if int(env['mali_license_is_gpl']) == 0 or fake_platform_device==1:
+			# Check if we are compiling for PBX
+			linux_config_file = os.path.normpath(os.environ['KDIR']) + '/.config'
+			search_term = '^[\ ]*CONFIG_MACH_REALVIEW_PBX[\ ]*=[\ ]*y'
+			REALVIEW_PBX = 0
+			for line in open(linux_config_file, 'r'):
+				if re.search(search_term, line):
+					REALVIEW_PBX = 1
+					break
+			if REALVIEW_PBX == 1 and env['platform_config'] == 'vexpress':
+				sys.stderr.write("WARNING: Building for a PBX kernel but with platform_config=vexpress\n")	
+			kbase_src += ['#kbase/src/linux/config/mali_kbase_config_%s.c' % (env['platform_config'])]
+		
+		# Note: cleaning via the Linux kernel build system does not yet work
+		if env.GetOption('clean') :
+			makeAction=Action("cd ${SOURCE.dir}/.. && make clean", '$MAKECOMSTR')
+		else:
+			if env['os'] == 'android':
+				env['android'] = 1
+			else:
+				env['android'] = 0
+
+			if env['unit'] == '1':
+				env['kernel_test'] = 1
+			else:
+				env['kernel_test'] = 0
+			makeAction=Action("cd ${SOURCE.dir}/.. && make PLATFORM=${platform} MALI_ERROR_INJECT_ON=${error_inject} MALI_BACKEND_KERNEL=1 MALI_NO_MALI=${no_mali} MALI_HW_VERSION=${hwver} MALI_USE_UMP=${ump} MALI_DEBUG=${debug} MALI_ANDROID=${android} MALI_BASE_TRACK_MEMLEAK=${base_qa} MALI_KERNEL_TEST_API=${kernel_test} MALI_KBASE_SCHEDULING_POLICY=%s MALI_UNIT_TEST=${unit} MALI_INFINITE_CACHE=${infinite_cache} MALI_LICENSE_IS_GPL=${mali_license_is_gpl} MALI_PLATFORM_CONFIG=${platform_config} MALI_ERROR_INJECT_ON=${error_inject} MALI_RELEASE_NAME=\"${mali_release_name}\" MALI_FAKE_PLATFORM_DEVICE=%s MALI_MOCK_TEST=%s MALI_GATOR_SUPPORT=${gator} && cp mali_kbase.ko $STATIC_LIB_PATH/mali_kbase.ko" % (scheduling_policy, fake_platform_device, mock_test), '$MAKECOMSTR')
+			
+		cmd = env.Command('$STATIC_LIB_PATH/mali_kbase.ko', kbase_src, [makeAction])
+
+		env.Depends('$STATIC_LIB_PATH/mali_kbase.ko', '$STATIC_LIB_PATH/libosk.a')
+		# need Module.symvers from ukk.kko and ump.ko builds
+		env.Depends('$STATIC_LIB_PATH/mali_kbase.ko', '$STATIC_LIB_PATH/ukk.ko')
+		if int(env['ump']) == 1:
+			env.Depends('$STATIC_LIB_PATH/mali_kbase.ko', '$STATIC_LIB_PATH/ump.ko')
+
+		# Until we fathom out how the invoke the Linux build system to clean, we can use Clean
+		# to remove generated files.
+		patterns = ['*.mod.c', '*.o', '*.ko', '*.a', '.*.cmd', 'modules.order', '.tmp_versions', 'Module.symvers']
+
+		for p in patterns:
+			Clean(cmd, Glob('#kbase/src/%s' % p))
+			Clean(cmd, Glob('#kbase/src/linux/%s' % p))
+			Clean(cmd, Glob('#kbase/src/common/%s' % p))
+			Clean(cmd, Glob('#kbase/tests/internal/src/mock/%s' % p))
+
+		env.ProgTarget('kbase', cmd)
+
+		env.AppendUnique(BASE=['cutils_list'])
+	else:
+		common_source = [
+			'common/mali_kbase_mem.c',
+			'common/mali_kbase_mmu.c',
+			'common/mali_kbase_jd.c',
+			'common/mali_kbase_jm.c',
+			'common/mali_kbase_js.c',
+			'common/mali_kbase_js_affinity.c',
+			'common/mali_kbase_js_policy_%s.c' % (scheduling_policy),
+			'common/mali_kbase_pm.c',
+			'common/mali_kbase_gpuprops.c',
+			'common/mali_kbase_event.c',
+			'common/mali_kbase_context.c',
+			'common/mali_kbase_pm.c',
+			'common/mali_kbase_pm_driver.c',
+			'common/mali_kbase_pm_metrics.c',
+			'common/mali_kbase_pm_always_on.c',
+			'common/mali_kbase_pm_demand.c',
+			'common/mali_kbase_device.c',
+			'common/mali_kbase_config.c',
+			'common/mali_kbase_security.c',
+			'common/mali_kbase_instr.c',
+			'common/mali_kbase_instr_7115.c',
+			'userspace/mali_kbase_core_userspace.c',
+			'userspace/mali_kbase_model_userspace.c',
+			'userspace/mali_kbase_mem_userspace.c',
+			'userspace/mali_kbase_ump.c',
+			'userspace/mali_kbase_pm_metrics_userspace.c'
+			]
+
+		if Glob('#kbase/tests/internal/src/mock') and env['unit'] == '1':
+			common_source += ['../tests/internal/src/mock/mali_kbase_pm_driver_mock.c']
+			mock_test = 1
+
+		os_source = []
+
+		if env['os'] in  ['linux']:
+			pass
+		else:
+			sys.stderr.write("*** Unsupported OS: %s\n" % env['os'])
+			Exit(1)
+
+		env.Append( CPPDEFINES = {'MALI_KBASE_USERSPACE' : 1} )
+		env.Append( CPPDEFINES = {'MALI_MOCK_TEST' : mock_test} )
+
+		if env['backend'] == 'user' and env['no_mali'] == '1':
+			hwsim_source = ['common/mali_kbase_model_dummy.c',
+							'common/mali_kbase_model_error_generator.c']
+			env.AppendUnique(BASE=['cutils_list', 'kbase'])
+		else:
+			# Unpack and extract the model - will only work on x86 Linux
+			if env['arch'] == 'x86_64':
+				hostbits = '64'
+			else:
+				hostbits = '32'
+
+			# Create a builder to handle extracting the model binary from the tarball. Using a builder,
+			# we can define a custom COMSTR to give less verbose output if requested.
+			extract = Action('tar xzf $SOURCE --strip-components 4 Rexported/lib/x86_rhe5_%s/%s/libMidgardModel.so -O > $TARGET' % (hostbits, env['model']), "$EXTRACTCOMSTR")
+			extract_builder = Builder(action = extract)
+			env.Append(BUILDERS = {'Extract' : extract_builder})
+			if not int(env['v']):
+				env.Append(EXTRACTCOMSTR = '[EXTRACT] $TARGET')
+
+			# Any builds dependent on the target "model" will cause the binary to be extracted
+			# Note that to maintain compatability with existing build files that expect to link against
+			# the static version, we extract to $STATIC_LIB_PATH too.
+			model = env.Extract('$STATIC_LIB_PATH/libMidgardModel.so','#model/model.tgz')
+			model_dlib = env.Extract('$SHARED_LIB_PATH/libMidgardModel.so','#model/model.tgz')
+			env.Depends(model, model_dlib)
+
+			# Create an action that can be used as a post-action, to install the model whenever it is unpacked,
+			# provding that the command-line option "libs_install" has been set. We also add a Clean method
+			# to delete the installed model when the extracted model is cleaned.
+			if env.has_key('libs_install'):
+				a = Action("mkdir -p {libs}; cp $STATIC_LIB_PATH/libMidgardModel.so {libs}".format(libs=env['libs_install']), "$COPYCOMSTR")
+				if not int(env['v']):
+					env.Append(COPYCOMSTR = '[COPY] $TARGET')
+				env.AddPostAction(model, a)
+				env.Clean(model, os.path.join(env['libs_install'], "libMidgardModel.so"))
+
+
+			hwsim_source = []
+			env.AppendUnique(
+					BASE=['cutils_list', 'kbase', 'MidgardModel', 'stdc++']
+					)
+			env.Alias('kbase', model)
+		
+		cppdefines = dict(env['CPPDEFINES'])
+		if env['unit'] == '1':
+			#make a local definition for STATIC
+			cppdefines.update( {'STATIC':''} )
+
+		libs=env.StaticLibrary( '$STATIC_LIB_PATH/kbase', [common_source, os_source, hwsim_source], CPPDEFINES = cppdefines)
+		env.LibTarget('kbase', libs)
+
+
+
+
+

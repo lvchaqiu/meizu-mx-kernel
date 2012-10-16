@@ -1,0 +1,59 @@
+#
+# (C) COPYRIGHT 2010-2011 ARM Limited. All rights reserved.
+#
+# This program is free software and is provided to you under the terms of the GNU General Public License version 2
+# as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
+#
+# A copy of the licence is included with the program, and can also be obtained from Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. 
+#
+#
+
+
+import os
+Import('env')
+
+# Clone the environment so changes don't affect other build files
+env_ion = env.Clone()
+
+# Abort building of the device driver for user-mode builds. This is a stop-gap
+# until we can build the ump common device driver source for user-mode.
+if env_ion['backend'] == 'user':
+   Return()
+
+if env_ion['ump_ion'] != '1':
+	Return()
+
+if env_ion['v'] != '1':
+	env_ion['MAKECOMSTR'] = '[MAKE] ${SOURCE.dir}'
+
+# Source files required for UMP.
+ion_src = [Glob('#ump/src/devicedrv/imports/ion/*.c')]
+
+# Note: cleaning via the Linux kernel build system does not yet work
+if env_ion.GetOption('clean') :
+	makeAction=Action("cd ${SOURCE.dir} && make clean", '$MAKECOMSTR')
+else:
+	if env['arch'] == 'x86_32' :
+		env_ion['arch_linux'] = 'x86'
+	elif 'arm' in env['arch']:
+		env_ion['arch_linux'] = 'arm'
+	else:
+		env_ion['arch_linux'] = env['arch']
+	makeAction=Action("cd ${SOURCE.dir} && make ARCH=$arch_linux MALI_BACKEND_KERNEL=1 MALI_HW_VERSION=${hwver} PLATFORM=${platform} MALI_LICENSE_IS_GPL=${mali_license_is_gpl} && cp ump_ion_import.ko $STATIC_LIB_PATH/ump_ion_import.ko", '$MAKECOMSTR')
+# The target is ump_import_ion.ko, built from the source in ion_src, via the action makeAction
+# ump_import_ion.ko will be copied to $STATIC_LIB_PATH after being built by the standard Linux
+# kernel build system, after which it can be installed to the directory specified if
+# "libs_install" is set; this is done by LibTarget.
+cmd = env_ion.Command('$STATIC_LIB_PATH/ump_ion_import.ko', ion_src, [makeAction])
+
+# Until we fathom out how the invoke the Linux build system to clean, we can use Clean
+# to remove generated files.
+
+patterns = ['*.mod.c', '*.o', '*.ko', '*.a', '.*.cmd', 'modules.order', '.tmp_versions', 'Module.symvers']
+
+for p in patterns:
+	Clean(cmd, Glob('#ump/src/devicedrv/imports/ion/%s' % p))
+
+env_ion.Depends('$STATIC_LIB_PATH/ump_ion_import.ko', '$STATIC_LIB_PATH/ump.ko')
+env_ion.ProgTarget('ump', cmd)

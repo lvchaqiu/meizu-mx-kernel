@@ -1,0 +1,51 @@
+#
+# (C) COPYRIGHT 2010-2011 ARM Limited. All rights reserved.
+#
+# This program is free software and is provided to you under the terms of the GNU General Public License version 2
+# as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
+#
+# A copy of the licence is included with the program, and can also be obtained from Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. 
+#
+#
+
+
+import os
+Import('env')
+
+# Clone the environment so changes don't affect other build files
+env_ukk = env.Clone()
+
+# Source files required for the UKK.
+ukk_src = [Glob('*.c'), Glob('#uk/src/ukk/*.c')]
+
+if env_ukk['backend'] == 'kernel':
+	if env_ukk['v'] != '1':
+		env_ukk['MAKECOMSTR'] = '[MAKE] ${SOURCE.dir}'
+	
+	# Note: cleaning via the Linux kernel build system does not yet work
+	if env_ukk.GetOption('clean') :
+		makeAction=Action("cd ${SOURCE.dir} && make clean", '$MAKECOMSTR')
+	else:
+		makeAction=Action("cd ${SOURCE.dir} && make PLATFORM=${platform} MALI_DEBUG=${debug} MALI_BACKEND_KERNEL=1 MALI_HW_VERSION=${hwver} MALI_BASE_TRACK_MEMLEAK=${base_qa} MALI_UNIT_TEST=${unit} MALI_LICENSE_IS_GPL=${mali_license_is_gpl} && cp ukk.ko $STATIC_LIB_PATH/ukk.ko", '$MAKECOMSTR')
+
+	# The target is ukk.ko, built from the source in ukk_src, via the action makeAction
+	# ukk.ko will be copied to $STATIC_LIB_PATH after being built by the standard Linux
+	# kernel build system, after which it can be installed to the directory specified if
+	# "libs_install" is set; this is done by LibTarget.
+	cmd = env_ukk.Command('$STATIC_LIB_PATH/ukk.ko', ukk_src, [makeAction])
+
+	env.Depends('$STATIC_LIB_PATH/ukk.ko', '$STATIC_LIB_PATH/libosk.a')
+
+	# Until we fathom out how the invoke the Linux build system to clean, we can use Clean
+	# to remove generated files.
+
+	patterns = ['*.mod.c', '*.o', '*.ko', '*.a', '.*.cmd', 'modules.order', '.tmp_versions', 'Module.symvers']
+
+	for p in patterns:
+		Clean(cmd, Glob('#uk/src/ukk/linux/%s' % p))
+		Clean(cmd, Glob('#uk/src/ukk/%s' % p))
+
+	env_ukk.ProgTarget('uk', cmd)
+
+

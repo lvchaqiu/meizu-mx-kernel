@@ -1,0 +1,21 @@
+config EXYNOS_CPUFREQ
+	bool "SAMSUNG EXYNOS 4210/4X12 CPU Frequency driver"
+	default y
+	help
+	 EXYNOS4 CPU Frequency driver.
+
+if EXYNOS_CPUFREQ
+
+config EXYNOS4210_CPUFREQ
+	bool "Exynos 4210 cpufreq support"
+	depends on CPU_EXYNOS4210
+	help
+	  Exynos4210 cpufreq support
+
+config EXYNOS4X12_CPUFREQ
+	bool "Exynos 4212/4412 cpufreq support"
+	depends on CPU_EXYNOS4212
+	help
+	  Exynos4412/4212 cpufreq support
+
+endif

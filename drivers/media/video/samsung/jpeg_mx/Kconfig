@@ -1,0 +1,17 @@
+#
+# Configuration for JPEG
+#
+
+config VIDEO_JPEG_MX
+	bool "Samsung JPEG driver for MX"
+	depends on VIDEO_SAMSUNG
+	default n
+	depends on VIDEO_DEV && VIDEO_V4L2
+	select V4L2_MEM2MEM_DEV
+	---help---
+	  This is a Samsung JPEG driver(Codec and V2.x) for MX 
+
+config VIDEO_JPEG_DEBUG
+	bool "print JPEG debug message"
+	depends on VIDEO_JPEG_MX
+	default n

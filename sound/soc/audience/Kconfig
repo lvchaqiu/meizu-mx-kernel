@@ -1,0 +1,11 @@
+config AUDIENCE_A1028
+	tristate "A1028 Voice Processor Driver"
+	default y
+	help
+	  Say Y here to enable a1028 voice processor support.
+	  
+config  REGULATOR_AUDIO_CRYSTAL
+	bool "Regulator for audio crystal "
+	depends on MACH_M030 && AUDIENCE_A1028
+	help
+	  Say Y for use the regulator of audio crystal

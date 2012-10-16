@@ -1,0 +1,137 @@
+config AUTOTEST
+	bool "Enable kernel built-in autotest framework"
+	default n
+	help
+	  This enable the entry to do some autotest for kernel, such as dump
+	  the kernel log and so forth.
+
+config AUTOTEST_RANDOM
+	bool "The test cycle and time should be random"
+	default n
+	depends on AUTOTEST
+	help
+	  This will be better to emulate the user using scene.
+
+config DUMP_LAST_KMSG
+	bool "Dump the message of the last kernel"
+	default n
+	depends on AUTOTEST
+	depends on ANDROID_RAM_CONSOLE
+	help
+	  This allows you dump out the message of the last kernel
+	  to an indicated file.
+
+config LAST_KMSG_LOG_DIR
+	string "The kernel message log directory"
+	depends on DUMP_LAST_KMSG
+	default "/sdcard/logs/"
+	help
+	  Configure the directory to save the last kernel message log.
+
+	  In order to simplfiy the operations, please don't provide
+	  a directory whose depth is more than 2.
+
+config LAST_KMSG_LOG_FILE
+	string "The kernel message log file of the last kernel"
+	depends on DUMP_LAST_KMSG
+	default "android_log.txt"
+	help
+	  Configure this to save the last kernel message log, which helps
+	  to track the potential problems of the kernel, such as panic,
+	  system hang, or even oops if set panic_on_oops.
+
+config BACKUP_LAST_KMSG_LOG_DIR
+	string "The kernel message log directory (backup)"
+	depends on DUMP_LAST_KMSG
+	default "/data/logs/"
+	help
+	  Configure the directory to save the last kernel message log.
+
+	  In order to simplfiy the operations, please don't provide
+	  a directory whose depth is more than 2.
+
+	  This is used as a backup when fail to write to LAST_KMSG_LOG_DIR..
+
+config BACKUP_LAST_KMSG_LOG_FILE
+	string "The kernel message log file of the last kernel (backup)"
+	depends on DUMP_LAST_KMSG
+	default "android_log.txt"
+	help
+	  Configure this to save the last kernel message log, which helps
+	  to track the potential problems of the kernel, such as panic,
+	  system hang, or even oops if set panic_on_oops.
+
+	  This is used as a backup when fail to write to LAST_KMSG_LOG_FILE.
+
+config LAST_KMSG_LOG_FILE_MAX_SIZE
+	int "Set the max size of the log file (in Kbytes)"
+	depends on DUMP_LAST_KMSG
+	range 128 2048
+	default 512
+	help
+	  Configure this to set the max size of the log file.
+
+config DISK_MOUNT_TIME
+	int "The time to mount the disk which saves the log file"
+	range 40 120
+	default 60
+	depends on DUMP_LAST_KMSG
+	help
+	  Configure this to wait for the disk to be mounted.)
+
+config AUTOTEST_REBOOT
+	bool "Run reboot test"
+	default n
+	select AUTOTEST
+	help
+	  Enable this option to test the system reboot.
+
+	  If unsure, say N.
+
+config AUTOTEST_REBOOT_CYCLE
+	int "Configure the auto reboot test cycle(in seconds)"
+	range 10 3600
+	depends on AUTOTEST_REBOOT
+	default 60
+	help
+	  Configure the auto reboot test cycle.
+
+	  If unsure, keep default.
+
+config AUTOTEST_SUSPEND
+	bool "Run suspend test"
+	default n
+	select AUTOTEST
+	depends on PM_TEST_SUSPEND
+	help
+	  Enable this option to test the system suspend.
+
+	  If unsure, say N.
+
+config AUTOTEST_SUSPEND_CYCLE
+	int "Configure the suspend test cycle(in seconds)"
+	range 1 3600
+	depends on AUTOTEST_SUSPEND
+	default 60
+	help
+	  Configure the suspend test cycle.
+
+	  If unsure, keep default.
+
+config AUTOTEST_SUSPEND_TIME
+	int "Configure the auto suspend time(in seconds)"
+	range 2 3600
+	depends on AUTOTEST_SUSPEND
+	default 10
+	help
+	  Configure the suspend time of suspend test.
+
+	  If unsure, keep default.
+
+config WAKEALARM_RTC
+	string "RTC used to wakeup the suspended system"
+	depends on AUTOTEST_SUSPEND
+	default "rtc0"
+	help
+	  The RTC device that will be used to wake up the suspended
+	  system.

@@ -1,0 +1,11 @@
+#
+# Configuration for rotator
+#
+
+config VIDEO_ROTATOR
+	bool "Samsung Image Rotator Driver" 
+	depends on VIDEO_SAMSUNG
+	default n
+	---help---
+	  This is a Rotator for Samsung S5PV210
+

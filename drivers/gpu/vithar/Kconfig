@@ -1,0 +1,33 @@
+menuconfig VITHAR
+	tristate "Enable Vithar DDK"
+	default n
+	help
+	  Choose this option to enable 3D rendering with vithar DDK.
+
+config VITHAR_DEVICE_NODE_CREATION_IN_RUNTIME
+	bool "Enable runtime device file creation by using UDEV"
+	depends on VITHAR
+	default y
+	help
+	  Choose this option to create device file under dev folder in runtime. Must be yes for Android.
+
+config VITHAR_RT_PM
+	bool "Enable Runtime power management"
+	depends on VITHAR
+	default n
+	help
+	  Choose this option to enable runtime power management on vithar DDK.
+
+config VITHAR_DVFS
+	bool "Enable DVFS"
+	depends on VITHAR
+	default n
+	help
+	  Choose this option to enable DVFS on vithar DDK.
+
+config VITHAR_ION
+	bool "Enable ION"
+	depends on VITHAR
+	default n
+	help
+	  Choose this option to enable ION to translate fd to sequre ID.

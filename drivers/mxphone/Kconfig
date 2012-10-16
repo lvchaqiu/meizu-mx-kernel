@@ -1,0 +1,39 @@
+#
+#
+#
+
+menuconfig MEIZU_PHONE
+	tristate "Meizu Phone Interface"
+	default n
+	---help---
+		meizu phone interface.
+if MEIZU_PHONE
+
+config XMM6260_MODEM
+	tristate "XMM6260 Modem support"
+	help
+	  Say Y here to enable XMM6260 modem control support.
+	  
+config XMM6260_ACM_CLASS
+	bool
+	default y
+	depends on XMM6260_MODEM && USB_EHCI_HCD
+
+config XMM6260_ENUM_SYNC
+	bool "Sync enumerate modem device after sleep"
+	default n
+	depends on XMM6260_ACM_CLASS
+	
+  config XMM6260_MODEM_TTY
+	tristate "XMM6260 Modem virtual tty support"
+	depends on XMM6260_ACM_CLASS
+	help
+	  Say Y here to enable XMM6260 modem virtual tty device support.
+
+config XMM6260_MODEM_NET
+	tristate "XMM6260 Modem virtual net support"
+	depends on  NET && XMM6260_ACM_CLASS
+	help
+	  Say Y here to enable XMM6260 modem virtual net device support.
+
+endif # MEIZU_PHONE
