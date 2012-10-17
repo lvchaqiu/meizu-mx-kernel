@@ -34,9 +34,6 @@
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
 #endif
-
-#include <plat/cpu.h>
-
 #define EARLYSUSPEND_HOTPLUGLOCK 1
 
 /*
@@ -153,7 +150,7 @@ static unsigned int get_nr_run_avg(void)
 #define DEF_FREQUENCY_MIN_SAMPLE_RATE		(10000)
 #define MIN_FREQUENCY_UP_THRESHOLD		(11)
 #define MAX_FREQUENCY_UP_THRESHOLD		(100)
-#define DEF_SAMPLING_RATE			(100000)
+#define DEF_SAMPLING_RATE			(50000)
 #define MIN_SAMPLING_RATE			(10000)
 #define MAX_HOTPLUG_RATE			(40u)
 
@@ -164,11 +161,11 @@ static unsigned int get_nr_run_avg(void)
 #define DEF_UP_NR_CPUS				(1)
 #define DEF_CPU_UP_RATE				(10)
 #define DEF_CPU_DOWN_RATE			(20)
-#define DEF_FREQ_STEP				(40)
+#define DEF_FREQ_STEP				(37)
 #define DEF_START_DELAY				(0)
 
 #define UP_THRESHOLD_AT_MIN_FREQ		(40)
-#define FREQ_FOR_RESPONSIVENESS			(500000)
+#define FREQ_FOR_RESPONSIVENESS			(400000)
 
 #define HOTPLUG_DOWN_INDEX			(0)
 #define HOTPLUG_UP_INDEX			(1)
@@ -866,7 +863,7 @@ static void cpu_up_work(struct work_struct *work)
 	else if (min_cpu_lock)
 		nr_up = max(nr_up, min_cpu_lock - online);
 
-	if (soc_is_exynos4412()) {
+	if (num_possible_cpus() == 4) {
 		if (online == 1) {
 			pr_debug("CPU_UP 3\n");
 				cpu_up(num_possible_cpus() - 1);
@@ -893,9 +890,6 @@ static void cpu_down_work(struct work_struct *work)
 	int online = num_online_cpus();
 	int nr_down = 1;
 	int hotplug_lock = atomic_read(&g_hotplug_lock);
-
-	cpu = smp_processor_id();
-	pr_debug("cpu = %d\n", cpu);
 
 	if (hotplug_lock)
 		nr_down = online - hotplug_lock;
@@ -1148,8 +1142,8 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	}
 
 	if (max_load_freq > up_threshold * policy->cur) {
-		/* Increment at 300MHz onestep */
-		int inc = 300000;	// Original: (policy->max * dbs_tuners_ins.freq_step) / 100;
+		/* Maximum increase of 300MHZ one-step */
+		int inc = min((policy->max * dbs_tuners_ins.freq_step) / 100, 300000U);
 		int target = min(policy->max, policy->cur + inc);
 		/* If switching to max speed, apply sampling_down_factor */
 		if (policy->cur < policy->max && target == policy->max)
