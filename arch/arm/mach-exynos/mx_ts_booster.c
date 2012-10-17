@@ -22,8 +22,9 @@
 
 #include <mach/dev.h>
 
-#define BOOST_CPU_FREQ 600000
-#define BOOST_BUS_FREQ 267160
+#define BOOST_CPU_FREQ (800000U)
+#define BOOST_BUS_FREQ (267200UL)
+#define KEEP_TIME	(HZ)
 
 struct mx_booster_info {
 	struct input_handler handler;
@@ -102,7 +103,7 @@ static int mx_ts_boost(struct mx_booster_info *info)
 		pr_debug("mxt_input_boost time = %Lu uS\n", delta_us);
 	}
 
-	return queue_delayed_work(info->wq, &info->time_work, HZ);
+	return queue_delayed_work(info->wq, &info->time_work, KEEP_TIME);
 }
 
 static void mx_boost_fn(struct work_struct *work)
