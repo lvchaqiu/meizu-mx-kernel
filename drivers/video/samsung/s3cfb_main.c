@@ -199,10 +199,11 @@ static int lcd_dfs_notify(struct notifier_block *nb,
 #endif
 	switch (action) {
 	case FB_EVENT_MODE_PAN:
+		s3cfb_frame_adjust(fbdev, FB_DYNAMIC_HIGH_FREQ);
+
 		if (delayed_work_pending(&fbdev->dfs_work))
 			cancel_delayed_work(&fbdev->dfs_work);
-		schedule_delayed_work(&fbdev->dfs_work, HZ/2);
-		s3cfb_frame_adjust(fbdev, FB_DYNAMIC_HIGH_FREQ);
+		schedule_delayed_work(&fbdev->dfs_work, msecs_to_jiffies(20));
 		break;
 	default:
 		break;
